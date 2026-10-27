@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.spec
+smoke.txt
+*-smoke.txt
+*.log
+.env
+.env.*
+settings.json
+profiles.json
+api_key.txt
