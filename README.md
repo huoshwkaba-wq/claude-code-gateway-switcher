@@ -5,8 +5,28 @@ Windows 桌面工具：管理多组服务地址和 Key，选择模型与推理�
 ## 下载与准备
 
 1. 打开 [下载页面](https://github.com/huoshwkaba-wq/claude-code-gateway-switcher/releases/latest)，在 Assets 中下载 `ClaudeGatewaySwitcher.exe`，双击运行。此文件是独立程序，无需安装 Python。
-2. 使用前请安装 Claude Code，并确认在命令提示符中输入 `claude --version` 能显示版本号。
-3. 准备服务商提供的 Anthropic 协议 Base URL、Key 和可用模型 ID。
+2. 安装 Claude Code。打开 PowerShell，运行官方安装命令：
+
+   ```powershell
+   irm https://claude.ai/install.ps1 | iex
+   ```
+
+   如果使用命令提示符（CMD），运行：
+
+   ```cmd
+   curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
+   ```
+
+   安装不需要管理员权限。完成后重新打开一个终端窗口。
+3. 验证安装。在 PowerShell 或 CMD 中依次运行：
+
+   ```text
+   claude --version
+   claude doctor
+   ```
+
+   第一条应显示 Claude Code 版本号；第二条检查安装与配置。如果提示找不到 `claude`，先重新打开终端；仍无法识别时检查安装目录是否已加入 `PATH`。详见 [Claude Code Windows 安装与验证文档](https://code.claude.com/docs/en/setup)。
+4. 准备服务提供的 Anthropic 协议 Base URL、Key 和可用模型 ID。
 
 ## 软件功能
 
