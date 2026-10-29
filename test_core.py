@@ -133,7 +133,7 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(command[1:3], ["-w", "0"])
         self.assertIn("-d", command)
         self.assertEqual(command[command.index("-d") + 1], str(Path(folder).resolve()))
-        self.assertEqual(command[-1], 'cmd.exe /d /k call "C:\\Tools\\claude.cmd"')
+        self.assertEqual(command[-5:], ["cmd.exe", "/d", "/k", "call", r"C:\Tools\claude.cmd"])
 
     def test_launch_rejects_missing_folder(self):
         with self.assertRaises(ValueError):

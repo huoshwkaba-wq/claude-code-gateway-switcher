@@ -294,7 +294,7 @@ def launch_claude(folder: str) -> str:
     if terminal:
         command = [terminal, "-w", "0", "new-tab", "--title", "Claude Code",
                    "--suppressApplicationTitle", "-d", str(project),
-                   f'cmd.exe /d /k call "{executable}"']
+                   "cmd.exe", "/d", "/k", "call", executable]
         try:
             subprocess.Popen(command, cwd=project)
             return "Windows Terminal"
