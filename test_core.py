@@ -116,13 +116,22 @@ class ProfileTests(unittest.TestCase):
              patch.object(core.subprocess, "Popen") as launched:
             self.assertEqual(core.launch_claude(folder), "Windows Terminal")
         command = launched.call_args.args[0]
+        self.assertEqual(command[1:3], ["-w", "0"])
         self.assertIn("-d", command)
         self.assertEqual(command[command.index("-d") + 1], str(Path(folder).resolve()))
-        self.assertEqual(command[-3:], ["cmd.exe", "/k", r"C:\Tools\claude.cmd"])
+        self.assertEqual(command[-1], 'cmd.exe /d /k call "C:\\Tools\\claude.cmd"')
 
     def test_launch_rejects_missing_folder(self):
         with self.assertRaises(ValueError):
             core.launch_claude(r"Z:\missing-claude-project")
+
+    def test_cmd_shim_runs_from_a_path_with_spaces(self):
+        with tempfile.TemporaryDirectory(prefix="Claude Switcher Smoke ") as folder:
+            script = Path(folder) / "claude.cmd"
+            script.write_text("@echo off\necho CLAUDE_STUB_OK\n", encoding="ascii")
+            result = core.subprocess.run(f'call "{script}"', shell=True, capture_output=True,
+                                         text=True, check=True)
+        self.assertIn("CLAUDE_STUB_OK", result.stdout)
 
 
 if __name__ == "__main__":

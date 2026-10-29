@@ -17,9 +17,9 @@ class Switcher(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Claude Code 中转站切换器")
-        self.geometry("1100x760")
+        self.geometry("1180x800")
         self.minsize(1050, 700)
-        self.configure(bg="#eaf0f6")
+        self.configure(bg="#f0f1f7")
         self.app_icon = tk.PhotoImage(file=str(ASSETS / "app_icon.png"))
         self.header_icon = tk.PhotoImage(file=str(ASSETS / "app_icon_48.png"))
         self.eye_open = tk.PhotoImage(file=str(ASSETS / "eye_open.png"))
@@ -28,25 +28,25 @@ class Switcher(tk.Tk):
         self.iconbitmap(default=str(ASSETS / "app_icon.ico"))
         style = ttk.Style(self)
         style.theme_use("clam")
-        style.configure("Page.TFrame", background="#eaf0f6")
+        style.configure("Page.TFrame", background="#f0f1f7")
         style.configure("TFrame", background="#ffffff")
         style.configure("TLabel", background="#ffffff", foreground="#25364b", font=("Microsoft YaHei UI", 10))
-        style.configure("Section.TLabel", background="#ffffff", foreground="#142a45",
+        style.configure("Section.TLabel", background="#ffffff", foreground="#252343",
                         font=("Microsoft YaHei UI", 11, "bold"))
         style.configure("Hint.TLabel", background="#ffffff", foreground="#63748b",
                         font=("Microsoft YaHei UI", 9))
-        style.configure("Muted.TLabel", background="#eaf0f6", foreground="#63748b",
+        style.configure("Muted.TLabel", background="#f0f1f7", foreground="#63748b",
                         font=("Microsoft YaHei UI", 9))
         style.configure("TButton", font=("Microsoft YaHei UI", 10), padding=(12, 7),
-                        background="#eaf3f7", foreground="#173b56", borderwidth=1,
-                        bordercolor="#cbdde7", relief="flat")
-        style.map("TButton", background=[("active", "#d9edf0")])
-        style.configure("Accent.TButton", foreground="white", background="#087d91",
+                        background="#f1f0f8", foreground="#39345e", borderwidth=1,
+                        bordercolor="#d8d5e8", relief="flat")
+        style.map("TButton", background=[("active", "#e3dff2")])
+        style.configure("Accent.TButton", foreground="white", background="#6049a8",
                         font=("Microsoft YaHei UI", 10, "bold"), padding=(15, 9))
-        style.map("Accent.TButton", background=[("active", "#06667a")])
+        style.map("Accent.TButton", background=[("active", "#493785")])
         style.configure("Treeview", font=("Microsoft YaHei UI", 9), rowheight=29,
                         background="white", fieldbackground="white", foreground="#25364b")
-        style.map("Treeview", background=[("selected", "#ddf2f4")],
+        style.map("Treeview", background=[("selected", "#e9e4f8")],
                   foreground=[("selected", "#17335c")])
         style.configure("Treeview.Heading", font=("Microsoft YaHei UI", 9, "bold"),
                         background="#edf3fa", foreground="#43566f")
@@ -60,7 +60,11 @@ class Switcher(tk.Tk):
         self.log_lines = ["测试使用当前表单内容，不会先修改 Claude Code 配置。"]
         self.log_window = None
         self.log_text = None
+        self._saved_form = None
+        self._launch_pending = False
         self._build()
+        self._saved_form = self._form_state()
+        self.protocol("WM_DELETE_WINDOW", self._close)
         self._refresh_list()
         if self.profiles:
             active_index = 0
@@ -76,38 +80,38 @@ class Switcher(tk.Tk):
     def _build(self):
         outer = ttk.Frame(self, style="Page.TFrame", padding=12)
         outer.pack(fill="both", expand=True)
-        header = tk.Frame(outer, bg="#142b49", height=68)
+        header = tk.Frame(outer, bg="#252342", height=72)
         header.pack(fill="x", pady=(0, 12))
         header.pack_propagate(False)
-        tk.Label(header, image=self.header_icon, bg="#142b49").pack(
-            side="left", padx=(15, 7), pady=10)
-        header_text = tk.Frame(header, bg="#142b49")
-        header_text.pack(side="left", pady=9)
-        tk.Label(header_text, text="Claude Code 工作台", bg="#142b49", fg="white",
+        tk.Label(header, image=self.header_icon, bg="#252342").pack(side="left", padx=(16, 10), pady=10)
+        heading = tk.Frame(header, bg="#252342")
+        heading.pack(side="left", pady=9)
+        tk.Label(heading, text="Claude Code 工作台", bg="#252342", fg="white",
                  font=("Microsoft YaHei UI", 18, "bold")).pack(anchor="w")
-        tk.Label(header_text, text="选择中转站和模型，在指定项目中打开 Claude Code",
-                 bg="#142b49", fg="#bdcee4", font=("Microsoft YaHei UI", 9)).pack(anchor="w")
+        tk.Label(heading, text="选择配置、模型与项目，准备就绪后启动",
+                 bg="#252342", fg="#d0cae8", font=("Microsoft YaHei UI", 9)).pack(anchor="w")
         body = ttk.Frame(outer, style="Page.TFrame")
         body.pack(fill="both", expand=True)
-        left = ttk.Frame(body, width=405, padding=15)
+
+        left = ttk.Frame(body, width=380, padding=15)
         left.pack(side="left", fill="y", padx=(0, 12))
         left.pack_propagate(False)
-        ttk.Label(left, text="中转站", style="Section.TLabel").pack(anchor="w", pady=(0, 2))
-        ttk.Label(left, text="点击地址，查看该站的模型", style="Hint.TLabel").pack(anchor="w", pady=(0, 10))
+        ttk.Label(left, text="1  选择中转站", style="Section.TLabel").pack(anchor="w")
+        ttk.Label(left, text="● 表示当前已启用；点击配置可查看模型", style="Hint.TLabel").pack(anchor="w", pady=(3, 8))
         tree_frame = ttk.Frame(left)
         tree_frame.pack(fill="both", expand=True)
         self.gateway_tree = ttk.Treeview(tree_frame, columns=("address",), show="tree headings",
-                                         selectmode="browse", height=9)
+                                         selectmode="browse", height=7)
         self.gateway_tree.heading("#0", text="名称")
-        self.gateway_tree.heading("address", text="中转站地址")
-        self.gateway_tree.column("#0", width=105, stretch=False)
-        self.gateway_tree.column("address", width=260, stretch=True)
+        self.gateway_tree.heading("address", text="地址")
+        self.gateway_tree.column("#0", width=100, stretch=False)
+        self.gateway_tree.column("address", width=220, stretch=True)
         self.gateway_tree.pack(side="left", fill="both", expand=True)
         tree_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.gateway_tree.yview)
         tree_scroll.pack(side="right", fill="y")
         self.gateway_tree.configure(yscrollcommand=tree_scroll.set)
         self.gateway_tree.bind("<<TreeviewSelect>>", lambda event: self._select())
-        ttk.Label(left, text="地址与凭据", style="Section.TLabel").pack(anchor="w", pady=(16, 4))
+        ttk.Label(left, text="配置详情", style="Section.TLabel").pack(anchor="w", pady=(14, 4))
         details = ttk.Frame(left)
         details.pack(fill="x")
         details.columnconfigure(1, weight=1)
@@ -120,93 +124,101 @@ class Switcher(tk.Tk):
         self._field(details, 0, "名称", self.name)
         self._field(details, 1, "地址", self.url)
         self._field(details, 2, "Key", self.key, secret=True)
-        ttk.Label(left, text="地址填 Base URL，不要粘贴完整的 /v1/messages。",
-                  style="Hint.TLabel").pack(anchor="w", pady=(4, 2))
-        ttk.Label(left, text="已保存的 Key 留空即保留；点眼睛可查看。",
-                  style="Hint.TLabel").pack(anchor="w", pady=(0, 8))
+        ttk.Label(left, text="填写 Anthropic 协议的 Base URL。", style="Hint.TLabel").pack(anchor="w", pady=(3, 1))
+        ttk.Label(left, text="已保存的 Key 留空即保留，点眼睛查看。", style="Hint.TLabel").pack(anchor="w", pady=(0, 8))
         manage = ttk.Frame(left)
         manage.pack(fill="x")
         ttk.Button(manage, text="新增", command=self._new).pack(side="left")
-        ttk.Button(manage, text="保存中转站", command=self._save).pack(side="left", padx=7)
+        ttk.Button(manage, text="保存配置", command=self._save).pack(side="left", padx=6)
         ttk.Button(manage, text="删除", command=self._delete).pack(side="left")
 
         right = ttk.Frame(body, padding=15)
         right.pack(side="left", fill="both", expand=True)
-        ttk.Label(right, text="模型", style="Section.TLabel").pack(anchor="w")
+        footer = ttk.Frame(right)
+        footer.pack(side="bottom", fill="x", pady=(8, 0))
+        self.status = tk.StringVar(value="请选择配置，或点击新增。")
+        ttk.Label(footer, textvariable=self.status, wraplength=520).pack(side="left", fill="x", expand=True)
+        ttk.Button(footer, text="查看测试记录", command=self._show_log).pack(side="right", padx=(8, 0))
+        launch = ttk.Frame(right)
+        launch.pack(side="bottom", fill="x", pady=(8, 0))
+        self.launch_button = ttk.Button(launch, text="启用并打开 Claude Code", style="Accent.TButton",
+                                         command=self._activate_and_launch)
+        self.launch_button.pack(side="left")
+        ttk.Button(launch, text="只应用配置", command=self._activate).pack(side="left", padx=(8, 0))
+        setup = ttk.Frame(right)
+        setup.pack(side="bottom", fill="x", pady=(12, 0))
+        ttk.Separator(setup).pack(fill="x", pady=(0, 10))
+        ttk.Label(setup, text="3  推理档位与项目", style="Section.TLabel").pack(anchor="w")
+        effort_row = ttk.Frame(setup)
+        effort_row.pack(fill="x", pady=(6, 5))
+        ttk.Label(effort_row, text="推理档位").pack(side="left", padx=(0, 10))
+        ttk.Combobox(effort_row, textvariable=self.effort, values=core.EFFORTS,
+                     state="readonly", width=13).pack(side="left")
+        ttk.Label(effort_row, text="auto 使用模型默认值", style="Hint.TLabel").pack(side="left", padx=(10, 0))
+        folder_row = ttk.Frame(setup)
+        folder_row.pack(fill="x")
+        ttk.Label(folder_row, text="项目文件夹").pack(side="left", padx=(0, 10))
+        ttk.Entry(folder_row, textvariable=self.workdir, state="readonly",
+                  font=("Cascadia Mono", 9)).pack(side="left", fill="x", expand=True)
+        ttk.Button(folder_row, text="选择文件夹", command=self._pick_folder).pack(side="left", padx=(8, 0))
+        ttk.Label(setup, text="每个中转站会记住对应的项目文件夹。", style="Hint.TLabel").pack(anchor="w", pady=(4, 0))
+
+        ttk.Label(right, text="2  选择并测试模型", style="Section.TLabel").pack(anchor="w")
         model_controls = ttk.Frame(right)
-        model_controls.pack(fill="x", pady=(7, 4))
-        self.model_box = ttk.Combobox(model_controls, textvariable=self.model,
-                                      font=("Cascadia Mono", 10))
+        model_controls.pack(fill="x", pady=(6, 4))
+        self.model_box = ttk.Combobox(model_controls, textvariable=self.model, font=("Cascadia Mono", 10))
         self.model_box.pack(side="left", fill="x", expand=True)
-        self.batch_button = ttk.Button(model_controls, text="测试模型", command=self._run_batch)
+        self.batch_button = ttk.Button(model_controls, text="测试全部模型", command=self._run_batch)
         self.batch_button.pack(side="left", padx=(8, 0))
         self.stop_button = ttk.Button(model_controls, text="停止", command=self._stop_batch, state="disabled")
         self.stop_button.pack(side="left", padx=(6, 0))
-        ttk.Label(right, text="点击左侧地址会加载模型；测试模型将逐个发送真实请求，可能产生费用。",
-                  style="Hint.TLabel").pack(anchor="w", pady=(0, 8))
-        ttk.Label(right, text="下方可多选常用模型；上方一次只启用一个模型。",
-                  style="Hint.TLabel").pack(anchor="w", pady=(0, 5))
-        model_frame = ttk.Frame(right, height=120)
-        model_frame.pack(fill="x")
-        model_frame.pack_propagate(False)
+        ttk.Label(right, text="上方选择一个当前模型；下方单击多选常用模型，双击可设为当前模型。",
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 6))
+        tools = ttk.Frame(right)
+        tools.pack(side="bottom", fill="x", pady=(5, 0))
+        ttk.Button(tools, text="保存常用模型", command=self._save).pack(side="left")
+        self.interface_button = ttk.Button(tools, text="接口测试", command=lambda: self._run_test(core.check_connection))
+        self.interface_button.pack(side="left", padx=(8, 0))
+        self.model_button = ttk.Button(tools, text="单模型测试", command=lambda: self._run_test(core.check_model))
+        self.model_button.pack(side="left", padx=(8, 0))
+        ttk.Label(tools, text="模型测试会发送真实请求", style="Hint.TLabel").pack(side="left", padx=(12, 0))
+        price_row = ttk.Frame(right)
+        price_row.pack(side="bottom", fill="x", pady=(5, 0))
+        self.price_status = tk.StringVar(value="价格以中转站公布的信息为准。")
+        ttk.Label(price_row, textvariable=self.price_status, style="Hint.TLabel").pack(side="left", fill="x", expand=True)
+        self.price_link = ttk.Button(price_row, text="查看官方计费", command=self._open_prices)
+        model_frame = ttk.Frame(right)
+        model_frame.pack(fill="both", expand=True)
         self.model_list = tk.Listbox(model_frame, selectmode=tk.MULTIPLE, exportselection=False,
                                      font=("Cascadia Mono", 10), activestyle="none",
-                                     relief="flat", highlightthickness=1, highlightcolor="#3467d5",
-                                     highlightbackground="#dce3ee", selectbackground="#dbe8ff",
-                                     selectforeground="#17335c")
+                                     relief="flat", highlightthickness=1, highlightcolor="#6049a8",
+                                     highlightbackground="#dcd9eb", selectbackground="#e9e4f8",
+                                     selectforeground="#30295a")
         self.model_list.pack(side="left", fill="both", expand=True)
         model_scroll = ttk.Scrollbar(model_frame, orient="vertical", command=self.model_list.yview)
         model_scroll.pack(side="right", fill="y")
         self.model_list.configure(yscrollcommand=model_scroll.set)
         self.model_list.bind("<<ListboxSelect>>", lambda event: self._favorites_changed())
-        price_row = ttk.Frame(right)
-        price_row.pack(fill="x", pady=(6, 0))
-        self.price_status = tk.StringVar(value="价格以中转站公布的信息为准。")
-        ttk.Label(price_row, textvariable=self.price_status, style="Hint.TLabel").pack(side="left")
-        self.price_link = ttk.Button(price_row, text="查看官方计费", command=self._open_prices)
-        ttk.Button(right, text="保存所选常用模型", command=self._save).pack(anchor="w", pady=(5, 8))
-        effort_row = ttk.Frame(right)
-        effort_row.pack(fill="x")
-        ttk.Label(effort_row, text="推理档位", style="Section.TLabel").pack(side="left", padx=(0, 12))
-        ttk.Combobox(effort_row, textvariable=self.effort, values=core.EFFORTS,
-                     state="readonly", width=15).pack(side="left")
-        ttk.Label(effort_row, text="auto 使用模型默认值", style="Hint.TLabel").pack(side="left", padx=(10, 0))
-        ttk.Label(right, text="项目文件夹", style="Section.TLabel").pack(anchor="w", pady=(10, 5))
-        folder_row = ttk.Frame(right)
-        folder_row.pack(fill="x")
-        ttk.Entry(folder_row, textvariable=self.workdir, state="readonly",
-                  font=("Cascadia Mono", 9)).pack(side="left", fill="x", expand=True)
-        ttk.Button(folder_row, text="选择文件夹", command=self._pick_folder).pack(side="left", padx=(8, 0))
-        ttk.Label(right, text="Claude Code 将在这个文件夹中打开；每个中转站分别记住路径。",
-                  style="Hint.TLabel").pack(anchor="w", pady=(5, 0))
-        actions = ttk.Frame(right)
-        actions.pack(fill="x", pady=(12, 8))
-        ttk.Button(actions, text="启用并打开 Claude Code", style="Accent.TButton",
-                   command=self._activate_and_launch).pack(side="left")
-        ttk.Button(actions, text="只应用配置", command=self._activate).pack(side="left", padx=(9, 0))
-        self.interface_button = ttk.Button(actions, text="接口测试", command=lambda: self._run_test(core.check_connection))
-        self.interface_button.pack(side="left", padx=(9, 0))
-        self.model_button = ttk.Button(actions, text="单模型测试", command=lambda: self._run_test(core.check_model))
-        self.model_button.pack(side="left", padx=(9, 0))
-        self.status = tk.StringVar(value="请选择配置，或点击新增。")
-        ttk.Label(right, textvariable=self.status, wraplength=610).pack(anchor="w", pady=(0, 7))
-        ttk.Button(right, text="查看测试记录", command=self._show_log).pack(anchor="w")
-
+        self.model_list.bind("<Double-Button-1>", self._choose_current_model)
     def _field(self, parent, row, title, variable, secret=False):
         ttk.Label(parent, text=title).grid(row=row, column=0, sticky="w", padx=(0, 12), pady=6)
         if secret:
             box = tk.Frame(parent, bg="white", highlightthickness=1,
-                           highlightbackground="#c5d5e0", highlightcolor="#087d91")
+                           highlightbackground="#d8d5e8", highlightcolor="#806bc0")
             box.grid(row=row, column=1, sticky="ew", pady=6)
             self.key_entry = tk.Entry(box, textvariable=variable, show="●", relief="flat",
-                                      borderwidth=0, bg="white", fg="#25364b",
-                                      font=("Microsoft YaHei UI", 10))
-            self.key_entry.pack(side="left", fill="x", expand=True, padx=(7, 0), pady=4)
+                                      borderwidth=0, highlightthickness=0, bg="white", fg="#30295a",
+                                      insertbackground="#6049a8", selectbackground="#e9e4f8",
+                                      selectforeground="#30295a", font=("Microsoft YaHei UI", 10))
+            self.key_entry.pack(side="left", fill="x", expand=True, padx=(9, 0), pady=2)
             self.key_button = tk.Button(box, image=self.eye_open, text="显示 Key", compound="none",
                                         command=self._toggle_key_visibility, relief="flat",
                                         borderwidth=0, highlightthickness=0, bg="white",
-                                        activebackground="#eaf3f7", cursor="hand2")
-            self.key_button.pack(side="right", padx=(0, 3))
+                                        activebackground="#f1eff8", cursor="hand2")
+            self.key_button.pack(side="right", padx=(4, 6), pady=1)
+            for widget in (self.key_entry, self.key_button):
+                widget.bind("<FocusIn>", lambda event: box.configure(highlightbackground="#806bc0"))
+                widget.bind("<FocusOut>", lambda event: box.configure(highlightbackground="#d8d5e8"))
             return
         entry = ttk.Entry(parent, textvariable=variable, show="●" if secret else "")
         entry.grid(row=row, column=1, sticky="ew", pady=6)
@@ -240,6 +252,41 @@ class Switcher(tk.Tk):
             self.workdir.set(folder)
             self.status.set("已选择项目文件夹：" + folder)
 
+    def _form_state(self):
+        return (self.name.get(), self.url.get(), self.model.get(), self.effort.get(),
+                self.workdir.get(), tuple(self._selected_favorites()))
+
+    def _has_unsaved_changes(self):
+        if self._saved_form is None:
+            return False
+        if self._form_state() != self._saved_form:
+            return True
+        if self.key.get():
+            if self.selected is None:
+                return True
+            try:
+                return self.key.get() != core.decrypt_key(self.profiles[self.selected]["key"])
+            except Exception:
+                return True
+        return False
+
+    def _confirm_discard(self):
+        return (not self._has_unsaved_changes() or
+                messagebox.askyesno("尚未保存", "当前修改尚未保存，放弃这些修改吗？", parent=self))
+
+    def _restore_selection(self):
+        if self.selected is None:
+            self.gateway_tree.selection_remove(self.gateway_tree.selection())
+        else:
+            self.gateway_tree.selection_set(str(self.selected))
+
+    def _close(self):
+        if self.batch_stop is not None:
+            self.status.set("请先停止模型测试，等待测试结束后再关闭。")
+            return
+        if self._confirm_discard():
+            self.destroy()
+
     def _refresh_list(self):
         self.gateway_tree.delete(*self.gateway_tree.get_children())
         try:
@@ -253,11 +300,20 @@ class Switcher(tk.Tk):
                 self.gateway_tree.insert("", "end", iid=str(index), text=profile["name"],
                                          values=(profile["url"],))
 
-    def _select(self):
+    def _select(self, force=False):
         selection = self.gateway_tree.selection()
         if not selection:
             return
         index = int(selection[0])
+        if index == self.selected and not force:
+            return
+        if not force and self.batch_stop is not None:
+            self._restore_selection()
+            self.status.set("请先停止模型测试，等待测试结束后再切换配置。")
+            return
+        if not force and not self._confirm_discard():
+            self._restore_selection()
+            return
         self.selected = index
         profile = self.profiles[self.selected]
         for variable, name in ((self.name, "name"), (self.url, "url"),
@@ -277,10 +333,16 @@ class Switcher(tk.Tk):
         self.price_status.set("正在读取官方价格…" if source else "该中转站未提供可读取的官方价格。")
         cached = list(dict.fromkeys(profile.get("favorites", []) + ([profile["model"]] if profile["model"] else [])))
         self._set_models(cached, profile.get("favorites", []))
+        self._saved_form = self._form_state()
         self.status.set("正在读取“" + profile["name"] + "”的模型列表…")
         self._load_models(profile)
 
-    def _new(self):
+    def _new(self, discard=False):
+        if self.batch_stop is not None:
+            self.status.set("请先停止模型测试，等待测试结束后再新增配置。")
+            return
+        if not discard and not self._confirm_discard():
+            return
         self.gateway_tree.selection_remove(self.gateway_tree.selection())
         self.selected = None
         self.model_request_id += 1
@@ -294,6 +356,7 @@ class Switcher(tk.Tk):
         self.effort.set("auto")
         self.workdir.set("")
         self._set_models([], [])
+        self._saved_form = self._form_state()
         self.status.set("填写新配置；Key 不会以明文保存在配置列表。")
 
     def _selected_favorites(self):
@@ -302,6 +365,13 @@ class Switcher(tk.Tk):
     def _favorites_changed(self):
         selected = self._selected_favorites()
         self.model_box["values"] = selected or self.model_ids
+
+    def _choose_current_model(self, event):
+        index = self.model_list.nearest(event.y)
+        bounds = self.model_list.bbox(index)
+        if 0 <= index < len(self.model_ids) and bounds and bounds[1] <= event.y < bounds[1] + bounds[3]:
+            self.model.set(self.model_ids[index])
+            self.status.set("当前模型：" + self.model_ids[index])
 
     def _set_models(self, model_ids, favorites=None):
         self.model_ids = list(dict.fromkeys(model_ids))
@@ -380,8 +450,14 @@ class Switcher(tk.Tk):
                                  require_model=require_model)
 
     def _save(self):
+        if self.batch_stop is not None:
+            self.status.set("请先停止模型测试，等待测试结束后再保存或启用。")
+            return None
         try:
             profile = self._current_profile(require_model=False)
+            previous = self.profiles[self.selected] if self.selected is not None else None
+            reload_models = (previous is None or previous["url"] != profile["url"] or
+                             bool(self.key.get() and self.key.get() != core.decrypt_key(previous["key"])))
             profile["favorites"] = self._selected_favorites()
             profile["workdir"] = self.workdir.get().strip()
             if any(index != self.selected and item["name"] == profile["name"]
@@ -397,7 +473,11 @@ class Switcher(tk.Tk):
             self._hide_key()
             self._refresh_list()
             self.gateway_tree.selection_set(str(self.selected))
-            self.status.set("已保存：" + profile["name"])
+            self._saved_form = self._form_state()
+            if reload_models:
+                self._select(force=True)
+            else:
+                self.status.set("已保存：" + profile["name"])
             return profile
         except (ValueError, OSError) as error:
             messagebox.showerror("无法保存", str(error), parent=self)
@@ -421,6 +501,8 @@ class Switcher(tk.Tk):
             return None
 
     def _activate_and_launch(self):
+        if self._launch_pending:
+            return
         folder = self.workdir.get().strip()
         if not folder or not Path(folder).is_dir():
             messagebox.showerror("无法启动", "请先选择有效的项目文件夹", parent=self)
@@ -431,14 +513,25 @@ class Switcher(tk.Tk):
         profile = self._activate()
         if profile is None:
             return
+        self._launch_pending = True
+        self.launch_button.configure(state="disabled")
         try:
             terminal = core.launch_claude(folder)
             self.status.set(f"已在 {folder} 中打开 Claude Code（{terminal}）。")
             self.after(700, self.iconify)
+            self.after(2000, self._finish_launch)
         except (ValueError, OSError) as error:
+            self._finish_launch()
             messagebox.showerror("启动失败", str(error), parent=self)
 
+    def _finish_launch(self):
+        self._launch_pending = False
+        self.launch_button.configure(state="normal")
+
     def _delete(self):
+        if self.batch_stop is not None:
+            self.status.set("请先停止模型测试，等待测试结束后再删除配置。")
+            return
         if self.selected is None:
             return
         profile = self.profiles[self.selected]
@@ -447,7 +540,7 @@ class Switcher(tk.Tk):
         del self.profiles[self.selected]
         core.save_profiles(self.profiles)
         self._refresh_list()
-        self._new()
+        self._new(discard=True)
         self.status.set("配置已从列表删除；Claude Code 当前启用配置未改变。")
 
     def _run_test(self, action):

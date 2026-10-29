@@ -292,15 +292,15 @@ def launch_claude(folder: str) -> str:
         raise ValueError("未找到 Claude Code 命令，请检查安装")
     terminal = shutil.which("wt.exe")
     if terminal:
-        command = [terminal, "-w", "new", "new-tab", "--title", "Claude Code",
+        command = [terminal, "-w", "0", "new-tab", "--title", "Claude Code",
                    "--suppressApplicationTitle", "-d", str(project),
-                   "cmd.exe", "/k", executable]
+                   f'cmd.exe /d /k call "{executable}"']
         try:
             subprocess.Popen(command, cwd=project)
             return "Windows Terminal"
         except OSError:
             pass
-    subprocess.Popen(["cmd.exe", "/k", executable], cwd=project,
+    subprocess.Popen(f'call "{executable}"', cwd=project, shell=True,
                      creationflags=subprocess.CREATE_NEW_CONSOLE)
     return "命令提示符"
 
