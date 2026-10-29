@@ -104,10 +104,24 @@ class ProfileTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as folder, patch.object(core, "APP_DIR", Path(folder)), \
              patch.object(core.shutil, "which", return_value="claude.cmd"), \
-             patch.object(core.subprocess, "Popen", return_value=FakeProcess()):
+             patch.object(core.subprocess, "Popen", return_value=FakeProcess()) as launched:
             result = core.check_model(profile, require_model_match=True)
         self.assertIn("实际使用模型为 fallback", result)
         self.assertEqual(core.model_status(result), "失败")
+        self.assertEqual(launched.call_args.kwargs["creationflags"], core.subprocess.CREATE_NO_WINDOW)
+
+    def test_check_model_runs_a_cli_stub_without_a_console_window(self):
+        profile = core.make_profile("本地测试", "https://gateway.invalid", "fake-key",
+                                    "fake-model", "auto")
+        with tempfile.TemporaryDirectory(prefix="Claude model test ") as folder:
+            root = Path(folder)
+            cli = root / "claude.cmd"
+            cli.write_text('@echo off\necho {"result":"OK","is_error":false,'
+                           '"modelUsage":{"fake-model":{}}}\n', encoding="ascii")
+            with patch.object(core, "APP_DIR", root), \
+                 patch.object(core, "find_claude", return_value=str(cli)):
+                result = core.check_model(profile, require_model_match=True)
+        self.assertTrue(result.startswith("模型已实际回复"), result)
 
     def test_launch_uses_selected_project_folder(self):
         with tempfile.TemporaryDirectory() as folder, \
@@ -130,7 +144,8 @@ class ProfileTests(unittest.TestCase):
             script = Path(folder) / "claude.cmd"
             script.write_text("@echo off\necho CLAUDE_STUB_OK\n", encoding="ascii")
             result = core.subprocess.run(f'call "{script}"', shell=True, capture_output=True,
-                                         text=True, check=True)
+                                         text=True, check=True,
+                                         creationflags=core.subprocess.CREATE_NO_WINDOW)
         self.assertIn("CLAUDE_STUB_OK", result.stdout)
 
 

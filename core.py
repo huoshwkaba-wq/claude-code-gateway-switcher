@@ -310,7 +310,8 @@ def _stop_process(process: subprocess.Popen) -> None:
         return
     try:
         subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                       capture_output=True, timeout=5)
+                       capture_output=True, timeout=5,
+                       creationflags=subprocess.CREATE_NO_WINDOW)
     except (OSError, subprocess.TimeoutExpired):
         process.kill()
     try:
@@ -342,7 +343,8 @@ def check_model(profile: dict, stop_event=None, timeout: int = 120,
                 command[4:4] = ["--effort", profile["effort"]]
             process = subprocess.Popen(command, cwd=APP_DIR, stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE, text=True, encoding="utf-8",
-                                       errors="replace")
+                                       errors="replace",
+                                       creationflags=subprocess.CREATE_NO_WINDOW)
             while True:
                 if stop_event is not None and stop_event.is_set():
                     _stop_process(process)
